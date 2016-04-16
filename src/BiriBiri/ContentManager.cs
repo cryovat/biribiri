@@ -1,0 +1,59 @@
+﻿using System;
+using Bridge;
+using Bridge.Html5;
+using Bridge.WebGL;
+
+namespace BiriBiri
+{
+    public class ContentManager
+    {
+        public const string DefaultTextureId = "BiriBiriDefault";
+        public const string DefaultTextureData = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAMAUExURYCAgP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADg4B1YAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAYdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuOWwzfk4AAADSSURBVFhH7dChEQAgDMDAsv/SIN7mugCvozKbs5A1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XZI1XfqTHl2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2SNV2ShZkLFA8IAbPs+pkAAAAASUVORK5CYII=";
+
+        private readonly object _map = new object();
+        private readonly WebGLRenderingContext _context;
+
+        public int TotalCount;
+        public int FailedCount;
+        public int LoadedCount;
+
+        public ContentManager(WebGLRenderingContext context)
+        {
+            _context = context;
+
+            AddTexture(DefaultTextureId, DefaultTextureData);
+        }
+
+        public void AddTexture(string id, string url)
+        {
+            TotalCount++;
+
+            var image = new ImageElement();
+            image.OnLoad = evt =>
+            {
+                var tex = _context.CreateTexture();
+
+                _context.BindTexture(_context.TEXTURE_2D, tex);
+                _context.TexImage2D(_context.TEXTURE_2D, 0, _context.RGBA, _context.RGBA, _context.UNSIGNED_BYTE, image);
+                _context.TexParameteri(_context.TEXTURE_2D, _context.TEXTURE_MAG_FILTER, _context.NEAREST);
+                _context.TexParameteri(_context.TEXTURE_2D, _context.TEXTURE_MIN_FILTER, _context.NEAREST);
+                _context.BindTexture(_context.TEXTURE_2D, null);
+
+                Script.Set(_map, id, tex);
+
+                LoadedCount++;
+            };
+
+            image.Src = url;
+        }
+
+        public WebGLTexture GetTexture(string id)
+        {
+            var tex = Script.Get<WebGLTexture>(_map, id);
+
+            if (tex == null) throw new Exception("Texture unknown or load failed: " + id);
+
+            return tex;
+        }
+    }
+}
