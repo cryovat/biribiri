@@ -17,6 +17,9 @@ namespace BiriBiri
             var container = Document.GetElementById(containerId);
 
             var canvas = Document.CreateElement<CanvasElement>("canvas");
+            container.AppendChild(canvas);
+            canvas.Id = containerId + "-biribiri-canvas";
+            canvas.InnerHTML = "Your browser doesn't appear to support the <code>&lt;canvas&gt;</code> element.";
             canvas.Width = width;
             canvas.Height = height;
 
@@ -27,20 +30,26 @@ namespace BiriBiri
             var mouse = new Mouse();
             mouse.Claim(canvas);
 
-            container.AppendChild(canvas);
-            var gl = canvas.GetContext(CanvasTypes.CanvasContextWebGLType.WebGL)
-                ?? canvas.GetContext(CanvasTypes.CanvasContextWebGLType.Experimental_WebGL);
+            var gl = (canvas.GetContext(CanvasTypes.CanvasContextWebGLType.Experimental_WebGL) ?? canvas.GetContext(CanvasTypes.CanvasContextWebGLType.WebGL)).As<WebGLRenderingContext>();
 
             var lastUpdate = DateTime.Now;
             var ready = true;
 
-            var game = new Game(keyboard, mouse, gl.As<WebGLRenderingContext>());
+            var game = new Game(keyboard, mouse, canvas, gl.As<WebGLRenderingContext>());
             BiriBiri.Game.Current = game;
 
             if (!string.IsNullOrWhiteSpace(title))
             {
                 Document.Title = title + " - " + Document.Title;
             }
+
+            gl.Viewport(0, 0, canvas.Width, canvas.Height);
+            gl.Enable(gl.DEPTH_TEST);
+            gl.DepthFunc(gl.LEQUAL);
+
+            gl.ClearColor(0.94, 0.97, 1, 1); // AliceBlue
+            gl.Clear(gl.COLOR_BUFFER_BIT);
+            gl.ClearDepth(1);
 
             Global.SetInterval(() =>
             {

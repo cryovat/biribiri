@@ -41,7 +41,7 @@ void main(void) {
 }
 ";
 
-        private readonly WebGLRenderingContext _context;
+        private readonly WebGLRenderingContext _gl;
 
         private readonly WebGLShader _vertexShader;
         private readonly WebGLShader _fragmentShader;
@@ -65,38 +65,38 @@ void main(void) {
 
         public bool IsStarted;
 
-        public WebGLSpriteBatch(WebGLRenderingContext context, uint capacity = 1000)
+        public WebGLSpriteBatch(WebGLRenderingContext gl, uint capacity = 1000)
         {
-            _context = context;
+            _gl = gl;
 
-            _arrayBuffer = _context.CreateBuffer();
+            _arrayBuffer = _gl.CreateBuffer();
             _data = new Float32Array(capacity * DataSize);
 
-            _vertexShader = context.CreateShader(context.VERTEX_SHADER);
-            _fragmentShader = context.CreateShader(context.FRAGMENT_SHADER);
+            _vertexShader = gl.CreateShader(gl.VERTEX_SHADER);
+            _fragmentShader = gl.CreateShader(gl.FRAGMENT_SHADER);
 
-            _context.ShaderSource(_vertexShader, VertexShader);
-            _context.CompileShader(_vertexShader);
+            _gl.ShaderSource(_vertexShader, VertexShader);
+            _gl.CompileShader(_vertexShader);
 
-            if (_context.GetError() != _context.NO_ERROR) throw new Exception("Vertex shader compilation failed: " + _context.GetShaderInfoLog(_vertexShader));
+            if (_gl.GetError() != _gl.NO_ERROR) throw new Exception("Vertex shader compilation failed: " + _gl.GetShaderInfoLog(_vertexShader));
 
-            _context.ShaderSource(_fragmentShader, FragmentShader);
-            _context.CompileShader(_fragmentShader);
+            _gl.ShaderSource(_fragmentShader, FragmentShader);
+            _gl.CompileShader(_fragmentShader);
 
-            if (_context.GetError() != _context.NO_ERROR) throw new Exception("Fragment shader compilation failed: " + _context.GetShaderInfoLog(_fragmentShader));
+            if (_gl.GetError() != _gl.NO_ERROR) throw new Exception("Fragment shader compilation failed: " + _gl.GetShaderInfoLog(_fragmentShader));
 
-            _spriteBatchProgram = context.CreateProgram().As<WebGLProgram>();
+            _spriteBatchProgram = gl.CreateProgram().As<WebGLProgram>();
 
-            _context.AttachShader(_spriteBatchProgram, _vertexShader);
-            _context.AttachShader(_spriteBatchProgram, _fragmentShader);
+            _gl.AttachShader(_spriteBatchProgram, _vertexShader);
+            _gl.AttachShader(_spriteBatchProgram, _fragmentShader);
 
-            _context.LinkProgram(_spriteBatchProgram);
+            _gl.LinkProgram(_spriteBatchProgram);
 
-            _cameraMatrixLocation = _context.GetUniformLocation(_spriteBatchProgram, CameraMatrixUniformName);
-            _samplerLocation = _context.GetUniformLocation(_spriteBatchProgram, SamplerUniformName);
+            _cameraMatrixLocation = _gl.GetUniformLocation(_spriteBatchProgram, CameraMatrixUniformName);
+            _samplerLocation = _gl.GetUniformLocation(_spriteBatchProgram, SamplerUniformName);
 
-            _vertexPositionLocation = _context.GetAttribLocation(_spriteBatchProgram, VertexPositionAttributeName);
-            _textureCoordLocation = _context.GetAttribLocation(_spriteBatchProgram, TextureCoordAttributeName);
+            _vertexPositionLocation = _gl.GetAttribLocation(_spriteBatchProgram, VertexPositionAttributeName);
+            _textureCoordLocation = _gl.GetAttribLocation(_spriteBatchProgram, TextureCoordAttributeName);
         }
 
         public void Begin()
@@ -176,29 +176,35 @@ void main(void) {
         {
             if (_offset != 0)
             {
-                _context.UseProgram(_spriteBatchProgram);
+                _gl.UseProgram(_spriteBatchProgram);
 
-                _context.BindBuffer(_context.ARRAY_BUFFER, _arrayBuffer);
-                _context.BufferData(_context.ARRAY_BUFFER, _data, _context.DYNAMIC_DRAW);
+                _gl.ActiveTexture(_gl.TEXTURE0);
+                _gl.BindTexture(_gl.TEXTURE_2D, CurrentTexture);
 
-                _context.VertexAttribPointer(_vertexPositionLocation, 2, _context.FLOAT, false, 8, 0);
-                _context.VertexAttribPointer(_textureCoordLocation, 2, _context.FLOAT, false, 8, 8);
+                _gl.Uniform1i(_samplerLocation, 0);
+                _gl.UniformMatrix4fv(_cameraMatrixLocation, false, CurrentCamera.Matrix.Raw.As<Array>());
 
-                _context.BindTexture(_context.TEXTURE_2D, CurrentTexture);
-                _context.Uniform1i(_samplerLocation, 0);
+                _gl.BindBuffer(_gl.ARRAY_BUFFER, _arrayBuffer);
+                _gl.BufferData(_gl.ARRAY_BUFFER, _data, _gl.DYNAMIC_DRAW);
 
-                _context.UniformMatrix4fv(_cameraMatrixLocation, false, CurrentCamera.Matrix.Raw.As<Array>());
+                _gl.VertexAttribPointer(_vertexPositionLocation, 2, _gl.FLOAT, false, BytesInFloat * 4, 0);
+                _gl.VertexAttribPointer(_textureCoordLocation, 2, _gl.FLOAT, false, BytesInFloat * 4, BytesInFloat * 2);
 
-                _context.DrawArrays(_context.TRIANGLES, 0, _offset / DataSize);
+                _gl.EnableVertexAttribArray(_vertexPositionLocation);
+                _gl.EnableVertexAttribArray(_textureCoordLocation);
 
-                _context.BindBuffer(_context.ARRAY_BUFFER, null);
-                _context.BindTexture(_context.TEXTURE_2D, null);
+                _gl.DrawArrays(_gl.TRIANGLES, 0, _offset / 4);
 
-                _context.UseProgram(null);
+                _gl.BindBuffer(_gl.ARRAY_BUFFER, null);
+                _gl.BindTexture(_gl.TEXTURE_2D, null);
+
+                _gl.UseProgram(null);
             }
 
             _offset = -1;
             IsStarted = false;
         }
+
+        private const int BytesInFloat = 4;
     }
 }

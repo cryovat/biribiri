@@ -8,9 +8,30 @@ namespace BiriBiri.Services
 {
     public class TestImageService : ServiceBase
     {
+        private readonly Vector2 _position = Vector2.Zero;
+        private readonly Vector2 _size = new Vector2(128);
+
         public override void Draw()
         {
-            Game.Draw(ContentManager.DefaultTextureId, Vector2.Zero);
+            const int Inset = 96;
+
+
+            _position.X = Inset;
+            _position.Y = Inset;
+
+            Game.Draw(ContentManager.DefaultTextureId, _position, _size, Vector2.One);
+
+            _position.X = Game.ViewportWidth - Inset;
+
+            Game.Draw(ContentManager.DefaultTextureId, _position, _size, Vector2.One);
+
+            _position.Y = Game.ViewportHeight - Inset;
+
+            Game.Draw(ContentManager.DefaultTextureId, _position, _size, Vector2.One);
+
+            _position.X = Inset;
+
+            Game.Draw(ContentManager.DefaultTextureId, _position, _size, Vector2.One);
         }
     }
 }
