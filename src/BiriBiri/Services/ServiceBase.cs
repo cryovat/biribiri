@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Bridge;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,9 +7,11 @@ using System.Threading.Tasks;
 
 namespace BiriBiri.Services
 {
+    [FileName("biriBiri.js")]
     public abstract class ServiceBase : IUpdatable, IDrawable
     {
-        public Game Game;
+        [FieldProperty]
+        public Game Game { get; internal set; }
 
         public virtual void Update(double delta)
         {

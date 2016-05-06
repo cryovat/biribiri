@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Bridge;
 
 namespace BiriBiri.Services
 {
+    [FileName("biriBiri.js")]
     public class TestImageService : ServiceBase
     {
         private readonly Vector2 _position = Vector2.Zero;
-        private readonly Vector2 _size = new Vector2(128);
 
         public override void Draw()
         {
@@ -19,19 +20,19 @@ namespace BiriBiri.Services
             _position.X = Inset;
             _position.Y = Inset;
 
-            Game.Draw(ContentManager.DefaultTextureId, _position, _size, Vector2.One);
+            Game.Draw(ContentManager.DefaultTextureId, _position);
 
             _position.X = Game.ViewportWidth - Inset;
 
-            Game.Draw(ContentManager.DefaultTextureId, _position, _size, Vector2.One);
+            Game.Draw(ContentManager.DefaultTextureId, _position);
 
             _position.Y = Game.ViewportHeight - Inset;
 
-            Game.Draw(ContentManager.DefaultTextureId, _position, _size, Vector2.One);
+            Game.Draw(ContentManager.DefaultTextureId, _position);
 
             _position.X = Inset;
 
-            Game.Draw(ContentManager.DefaultTextureId, _position, _size, Vector2.One);
+            Game.Draw(ContentManager.DefaultTextureId, _position);
         }
     }
 }

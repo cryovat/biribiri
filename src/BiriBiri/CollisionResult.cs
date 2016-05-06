@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Bridge;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,10 @@ using System.Threading.Tasks;
 
 namespace BiriBiri
 {
-    public enum Layers
+    [FileName("biriBiri.js")]
+    public enum CollisionResult
     {
+        None,
+        Overlap
     }
 }

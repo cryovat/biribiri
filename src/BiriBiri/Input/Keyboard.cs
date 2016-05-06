@@ -8,12 +8,14 @@ using Bridge.Html5;
 
 namespace BiriBiri.Input
 {
+    [FileName("biriBiri.js")]
     public enum KeyStates
     {
         Up,
         Down
     }
 
+    [FileName("biriBiri.js")]
     public enum Key
     {
         ArrowDown = 0x28,
@@ -22,6 +24,7 @@ namespace BiriBiri.Input
         ArrowUp = 0x26,
     }
 
+    [FileName("biriBiri.js")]
     public class Keyboard : IUpdatable
     {
         private readonly KeyStates[] _a = new KeyStates[256];

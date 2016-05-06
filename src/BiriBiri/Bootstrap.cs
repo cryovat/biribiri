@@ -1,20 +1,39 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using BiriBiri.Input;
+using BiriBiri.Level2;
+using BiriBiri.Utils;
 using Bridge;
 using Bridge.Html5;
 using Bridge.WebGL;
 
 namespace BiriBiri
 {
+    [FileName("biriBiri.level2.js")]
+    public static class Level2Bootstrap
+    {
+        public static void UseLevel2(this Game game)
+        {
+            game.AddFactory(new EntityPresetManager<Entity2D>());
+        }
+
+        public static EntityPresetManager<Entity2D> GetPresets2D(this Game game)
+        {
+            return game.GetFactory<EntityPresetManager<Entity2D>>();
+        }
+    }
+
     public static class Bootstrap
     {
-        public static Game Game(string containerId, int width, int height, string title = null)
+        public static void Game(string containerId, int width, int height, Action<Game> onLoaded)
+        {
+            Game(containerId, width, height, null, onLoaded);
+        }
+
+        public static void Game(string containerId, int width, int height, string title, Action<Game> onLoaded)
         {
             var container = Document.GetElementById(containerId);
+
+
 
             var canvas = Document.CreateElement<CanvasElement>("canvas");
             container.AppendChild(canvas);
@@ -23,6 +42,14 @@ namespace BiriBiri
             canvas.Width = width;
             canvas.Height = height;
 
+            var gl = (canvas.GetContext(CanvasTypes.CanvasContextWebGLType.WebGL) ?? canvas.GetContext(CanvasTypes.CanvasContextWebGLType.Experimental_WebGL)).As<WebGLRenderingContext>();
+            if (gl == null)
+            {
+                container.RemoveChild(canvas);
+                container.InnerHTML = "Your browser doesn't appear to support WebGL. Please try Chrome, Firefox or Edge.";
+                return;
+            }
+
             var keyboard = new Keyboard();
             Document.OnKeyUp = keyboard.HandleKeyUp;
             Document.OnKeyDown = keyboard.HandleKeyDown;
@@ -30,12 +57,10 @@ namespace BiriBiri
             var mouse = new Mouse();
             mouse.Claim(canvas);
 
-            var gl = (canvas.GetContext(CanvasTypes.CanvasContextWebGLType.Experimental_WebGL) ?? canvas.GetContext(CanvasTypes.CanvasContextWebGLType.WebGL)).As<WebGLRenderingContext>();
-
             var lastUpdate = DateTime.Now;
             var ready = true;
 
-            var game = new Game(keyboard, mouse, canvas, gl.As<WebGLRenderingContext>());
+            var game = new Game(keyboard, mouse, gl.As<WebGLRenderingContext>(), onLoaded);
             BiriBiri.Game.Current = game;
 
             if (!string.IsNullOrWhiteSpace(title))
@@ -47,11 +72,9 @@ namespace BiriBiri
             gl.Enable(gl.DEPTH_TEST);
             gl.DepthFunc(gl.LEQUAL);
 
-            gl.ClearColor(0.94, 0.97, 1, 1); // AliceBlue
-            gl.Clear(gl.COLOR_BUFFER_BIT);
-            gl.ClearDepth(1);
+            int intervalId = -1;
 
-            Global.SetInterval(() =>
+            intervalId = Global.SetInterval(() =>
             {
                 if (!ready) return;
                 ready = false;
@@ -69,8 +92,6 @@ namespace BiriBiri
             {
                 keyboard.Clear();
             };
-
-            return game;
         }
     }
 }

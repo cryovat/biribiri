@@ -3,45 +3,79 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Bridge;
 
 namespace BiriBiri
 {
-    public class Camera : IUpdatable
+    public class Camera
     {
-        private readonly Vector3 _helper = new Vector3();
+        private Vector2 _position;
+        private Vector2 _scale;
 
         public readonly Matrix Matrix = Matrix.CreateIdentity();
 
-        public uint Width;
-        public uint Height;
+        [FieldProperty]
+        public uint Width { get; private set; }
+        [FieldProperty]
+        public uint Height { get; private set; }
 
-        public double Zoom;
+        public Camera(uint width, uint height)
+        {
+            _position = new Vector2(0, 0);
+            _scale = new Vector2(1, 1);
+
+            Width = width;
+            Height = height;
+
+            Matrix.InitOrthographicOffCenter(0, width, height, 0, 0, -1);
+        }
 
         public void ConvertWorldCoordinate(Vector2 coordiate, Vector2 destination)
         {
             Matrix m;
         }
 
-        public void Update(double delta)
+        public void CopyBoundsTo(Rectangle rectangle)
         {
+            var sw = Width*_scale.X;
+            var sh = Height*_scale.Y;
+
+            rectangle.X = -sw /2;
+            rectangle.Y = -sh /2;
+            rectangle.Width = sw;
+            rectangle.Height = sh;
         }
 
-        public void SetPosition(double x, double y)
+        public void CenterAt(double x, double y)
         {
-            _helper.X = x;
-            _helper.Y = y;
-            _helper.Z = 0;
-
-            Matrix.Translation = _helper;
+            _position.X = x;
+            _position.Y = y;
         }
 
-        public void SetScale(double x, double y)
+        public void CenterAt(Vector2 position)
         {
-            _helper.X = x;
-            _helper.Y = y;
-            _helper.Z = 0;
+            _position.X = position.X;
+            _position.Y = position.Y;
+        }
 
-            Matrix.Scale = _helper;
+        public void ScaleAt(Vector2 scale)
+        {
+            _scale.X = scale.X;
+            _scale.Y = scale.Y;
+        }
+
+        private void UpdateMatrix()
+        {
+            var shw = (Width / 2) * _scale.X;
+            var shh = (Height / 2) * _scale.Y;
+
+            var left = _position.X - shw;
+            var top = _position.Y - shh;
+
+            var right = _position.X + shw;
+            var bottom = _position.Y + shh;
+
+            Matrix.InitOrthographicOffCenter((float)left, (float)right, (float)bottom, (float)top, 0, -1);
         }
     }
 }

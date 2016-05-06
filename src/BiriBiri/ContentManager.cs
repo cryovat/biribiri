@@ -1,10 +1,13 @@
 ﻿using System;
+using BiriBiri.Graphics;
 using Bridge;
 using Bridge.Html5;
 using Bridge.WebGL;
 
 namespace BiriBiri
 {
+    public delegate void ContentLoadedHandler(string[] failed);
+
     public class ContentManager
     {
         public const string DefaultTextureId = "BiriBiriDefault";
@@ -12,14 +15,26 @@ namespace BiriBiri
 
         private readonly object _map = new object();
         private readonly WebGLRenderingContext _context;
+        private readonly ContentLoadedHandler _contentLoadedHandler;
 
-        public int TotalCount;
-        public int FailedCount;
-        public int LoadedCount;
+        private readonly string[] _failedAssets = new string[0];
 
-        public ContentManager(WebGLRenderingContext context)
+        [FieldProperty]
+        public int TotalCount { get; private set; }
+        [FieldProperty]
+        public int FailedCount { get; private set; }
+        [FieldProperty]
+        public int LoadedCount { get; private set; }
+
+        public int PendingCount
+        {
+            get { return TotalCount - LoadedCount - FailedCount; }
+        }
+
+        public ContentManager(WebGLRenderingContext context, ContentLoadedHandler contentLoadedHandler)
         {
             _context = context;
+            _contentLoadedHandler = contentLoadedHandler;
 
             AddTexture(DefaultTextureId, DefaultTextureData);
         }
@@ -39,17 +54,35 @@ namespace BiriBiri
                 _context.TexParameteri(_context.TEXTURE_2D, _context.TEXTURE_MIN_FILTER, _context.NEAREST);
                 _context.BindTexture(_context.TEXTURE_2D, null);
 
-                Script.Set(_map, id, tex);
+                Script.Set(_map, id, new Texture(tex, (uint)image.NaturalWidth, (uint)image.NaturalHeight));
 
                 LoadedCount++;
+
+                if (TotalCount == LoadedCount + FailedCount)
+                {
+                    _contentLoadedHandler(_failedAssets);
+                }
+            };
+
+            image.OnError = (message, url2, lineNumber, columnNumber, error) =>
+            {
+                FailedCount++;
+
+                if (TotalCount == LoadedCount + FailedCount)
+                {
+                    _failedAssets.Push(url);
+                    _contentLoadedHandler(_failedAssets);
+                }
+
+                return true;
             };
 
             image.Src = url;
         }
 
-        public WebGLTexture GetTexture(string id)
+        public Texture GetTexture(string id)
         {
-            var tex = Script.Get<WebGLTexture>(_map, id);
+            var tex = Script.Get<Texture>(_map, id);
 
             if (tex == null) throw new Exception("Texture unknown or load failed: " + id);
 

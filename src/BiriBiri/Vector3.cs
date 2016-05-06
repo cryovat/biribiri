@@ -296,5 +296,10 @@ namespace BiriBiri
         }
 
         #endregion
+
+        public Vector3 Copy()
+        {
+            return new Vector3(X, Y, Z);
+        }
     }
 }

@@ -5,11 +5,9 @@ using Bridge.WebGL;
 
 namespace BiriBiri.Graphics.WebGL
 {
+    [FileName("biriBiri.js")]
     public class WebGLSpriteBatch
     {
-        private static readonly Vector2 One = Vector2.One;
-        private static readonly TexCoords WholeTexture = new TexCoords(0, 0, 1, 1);
-
         private const string CameraMatrixUniformName = "uCameraMatrix";
         private const string SamplerUniformName = "uSampler";
 
@@ -40,6 +38,8 @@ void main(void) {
     gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
 }
 ";
+        private readonly Matrix _matrix = Matrix.CreateIdentity();
+        private readonly Vector2 _helper = Vector2.Zero;
 
         private readonly WebGLRenderingContext _gl;
 
@@ -60,10 +60,16 @@ void main(void) {
 
         private const int DataSize = 24;
 
-        public WebGLTexture CurrentTexture;
-        public Camera CurrentCamera;
+        [FieldProperty]
+        public Texture CurrentTexture { get; set; }
+        [FieldProperty]
+        public Camera CurrentCamera { get; set; }
 
-        public bool IsStarted;
+        [FieldProperty]
+        public bool IsStarted { get; private set; }
+
+        private int ViewportWidth { get { return Script.Get<int>(_gl, "drawingBufferWidth"); } }
+        private int ViewportHeight { get { return Script.Get<int>(_gl, "drawingBufferHeight"); } }
 
         public WebGLSpriteBatch(WebGLRenderingContext gl, uint capacity = 1000)
         {
@@ -103,23 +109,20 @@ void main(void) {
         {
             _offset = 0;
 
-            if (CurrentCamera == null) throw new Exception("Camera must be set before calling Begin()");
             if (CurrentTexture == null) throw new Exception("Texture must be set before calling Begin()");
 
             IsStarted = true;
         }
 
-        public void Draw(Vector2 postion, Vector2 size = null, Vector2 scale = null, TexCoords? texCoords = null)
+        public void Draw(Vector2 postion, uint frameIndex, Vector2 scale)
         {
-            size = size ?? One;
-            scale = scale ?? One;
-            var coords = texCoords ?? WholeTexture;
+            var texCoords = CurrentTexture.Frames[frameIndex];
 
-            var hw = (float)((size.X / 2) * scale.X);
-            var hh = (float)((size.Y / 2) * scale.Y);
+            var hw = (float)((texCoords.PixelWidth / 2) * scale.X);
+            var hh = (float)((texCoords.PixelHeight / 2) * scale.Y);
 
             var px = (float)postion.X;
-            var py = (float) postion.Y;
+            var py = (float)postion.Y;
 
             var minX = px - hw;
             var maxX = px + hw;
@@ -131,43 +134,43 @@ void main(void) {
 
             var offset = _offset;
 
-            _data[offset+0] = minX;
-            _data[offset+1] = minY;
+            _data[offset + 0] = minX;
+            _data[offset + 1] = minY;
 
-            _data[offset+2] = coords.MinX;
-            _data[offset+3] = coords.MinY;
+            _data[offset + 2] = texCoords.MinX;
+            _data[offset + 3] = texCoords.MinY;
 
-            _data[offset+4] = maxX;
-            _data[offset+5] = minY;
+            _data[offset + 4] = maxX;
+            _data[offset + 5] = minY;
 
-            _data[offset+6] = coords.MaxX;
-            _data[offset+7] = coords.MinY;
+            _data[offset + 6] = texCoords.MaxX;
+            _data[offset + 7] = texCoords.MinY;
 
-            _data[offset+8] = minX;
-            _data[offset+9] = maxY;
+            _data[offset + 8] = minX;
+            _data[offset + 9] = maxY;
 
-            _data[offset+10] = coords.MinX;
-            _data[offset+11] = coords.MaxY;
+            _data[offset + 10] = texCoords.MinX;
+            _data[offset + 11] = texCoords.MaxY;
 
             // Tri2 - /|
 
-            _data[offset+12] = maxX;
-            _data[offset+13] = minY;
+            _data[offset + 12] = maxX;
+            _data[offset + 13] = minY;
 
-            _data[offset+14] = coords.MaxX;
-            _data[offset+15] = coords.MinY;
+            _data[offset + 14] = texCoords.MaxX;
+            _data[offset + 15] = texCoords.MinY;
 
-            _data[offset+16] = maxX;
-            _data[offset+17] = maxY;
+            _data[offset + 16] = maxX;
+            _data[offset + 17] = maxY;
 
-            _data[offset+18] = coords.MaxX;
-            _data[offset+19] = coords.MaxY;
+            _data[offset + 18] = texCoords.MaxX;
+            _data[offset + 19] = texCoords.MaxY;
 
-            _data[offset+20] = minX;
-            _data[offset+21] = maxY;
+            _data[offset + 20] = minX;
+            _data[offset + 21] = maxY;
 
-            _data[offset+22] = coords.MinX;
-            _data[offset+23] = coords.MaxY;
+            _data[offset + 22] = texCoords.MinX;
+            _data[offset + 23] = texCoords.MaxY;
 
             _offset += DataSize;
         }
@@ -176,19 +179,31 @@ void main(void) {
         {
             if (_offset != 0)
             {
+                Matrix matrix;
+
+                if (CurrentCamera == null)
+                {
+                    matrix = _matrix;
+                    matrix.InitOrthographicOffCenter(0, ViewportWidth, ViewportHeight, 0, 0, -1);
+                }
+                else
+                {
+                    matrix = CurrentCamera.Matrix;
+                }
+
                 _gl.UseProgram(_spriteBatchProgram);
 
                 _gl.ActiveTexture(_gl.TEXTURE0);
-                _gl.BindTexture(_gl.TEXTURE_2D, CurrentTexture);
+                _gl.BindTexture(_gl.TEXTURE_2D, CurrentTexture.WebGLTexture);
 
                 _gl.Uniform1i(_samplerLocation, 0);
-                _gl.UniformMatrix4fv(_cameraMatrixLocation, false, CurrentCamera.Matrix.Raw.As<Array>());
+                _gl.UniformMatrix4fv(_cameraMatrixLocation, false, matrix.Raw.As<Array>());
 
                 _gl.BindBuffer(_gl.ARRAY_BUFFER, _arrayBuffer);
                 _gl.BufferData(_gl.ARRAY_BUFFER, _data, _gl.DYNAMIC_DRAW);
 
-                _gl.VertexAttribPointer(_vertexPositionLocation, 2, _gl.FLOAT, false, BytesInFloat * 4, 0);
-                _gl.VertexAttribPointer(_textureCoordLocation, 2, _gl.FLOAT, false, BytesInFloat * 4, BytesInFloat * 2);
+                _gl.VertexAttribPointer(_vertexPositionLocation, 2, _gl.FLOAT, false, FloatSize * 4, 0);
+                _gl.VertexAttribPointer(_textureCoordLocation, 2, _gl.FLOAT, false, FloatSize * 4, FloatSize * 2);
 
                 _gl.EnableVertexAttribArray(_vertexPositionLocation);
                 _gl.EnableVertexAttribArray(_textureCoordLocation);
@@ -203,8 +218,11 @@ void main(void) {
 
             _offset = -1;
             IsStarted = false;
+
+            CurrentTexture = null;
+            CurrentCamera = null;
         }
 
-        private const int BytesInFloat = 4;
+        private const int FloatSize = 4;
     }
 }

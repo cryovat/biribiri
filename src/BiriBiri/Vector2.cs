@@ -297,5 +297,10 @@ namespace BiriBiri
         {
             return "{X:" + X + " Y:" + Y + "}";
         }
+
+        public Vector2 Copy()
+        {
+            return new Vector2(X, Y);
+        }
     }
 }

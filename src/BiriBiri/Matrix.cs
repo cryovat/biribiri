@@ -262,8 +262,7 @@ float m32, float m33, float m34, float m41, float m42, float m43, float m44)
             Raw[M44] = 1f;
         }
 
-        public void InitOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane,
-float zFarPlane)
+        public void InitOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
         {
             Raw[M11] = (float)(2.0 / ((double)right - (double)left));
             Raw[M12] = 0.0f;
@@ -283,8 +282,7 @@ float zFarPlane)
             Raw[M44] = 1.0f;
         }
 
-        public static Matrix CreatePerspective(float width, float height, float nearPlaneDistance,
-float farPlaneDistance)
+        public static Matrix CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
         {
             var matrix = new Matrix();
             matrix.InitPerspective(width, height, nearPlaneDistance, farPlaneDistance);
@@ -348,8 +346,7 @@ float farPlaneDistance)
             Raw[M43] = (nearPlaneDistance * farPlaneDistance) / (nearPlaneDistance - farPlaneDistance);
         }
 
-        public void InitPerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance,
-float farPlaneDistance)
+        public void InitPerspectiveOffCenter(float left, float right, float bottom, float top, float nearPlaneDistance, float farPlaneDistance)
         {
             if (nearPlaneDistance <= 0f)
             {
@@ -901,7 +898,7 @@ float farPlaneDistance)
         public void TransformVector(Vector2 vector)
         {
             var x = (vector.X * Raw[M11]) + (vector.Y * Raw[M21]) + Raw[M31] + Raw[M41];
-            var y = (vector.X * Raw[M12]) + (vector.Y * Raw[M22]) + Raw[32] + Raw[M42];
+            var y = (vector.X * Raw[M12]) + (vector.Y * Raw[M22]) + Raw[M32] + Raw[M42];
             vector.X = x;
             vector.Y = y;
         }
@@ -914,6 +911,21 @@ float farPlaneDistance)
             vector.X = x;
             vector.Y = y;
             vector.Z = z;
+        }
+
+        public void TransformRectangle(Rectangle rectangle)
+        {
+            var x = (rectangle.X * Raw[M11]) + (rectangle.Y * Raw[M21]) + Raw[M31] + Raw[M41];
+            var y = (rectangle.X * Raw[M12]) + (rectangle.Y * Raw[M22]) + Raw[M32] + Raw[M42];
+
+            var width = (rectangle.Width * Raw[M11]) + (rectangle.Height * Raw[M21]) + Raw[M31] + Raw[M41];
+            var height = (rectangle.Width * Raw[M12]) + (rectangle.Height * Raw[M22]) + Raw[M32] + Raw[M42];
+
+            rectangle.X = x;
+            rectangle.Y = y;
+
+            rectangle.Width = width;
+            rectangle.Height = height;
         }
     }
 }

@@ -1,30 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Bridge;
+using Bridge.WebGL;
 
 namespace BiriBiri.Graphics
 {
     [FileName("biriBiri.js")]
-    public class SpriteAtlas
+    public class Texture
     {
-        private readonly TexCoords[] _map;
+        [FieldProperty]
+        public WebGLTexture WebGLTexture { get; private set; }
+        [FieldProperty]
+        public TexCoords[] Frames { get; private set; }
 
-        public SpriteAtlas(uint count)
+        public Texture(WebGLTexture texture, uint width, uint height)
         {
-            _map = new TexCoords[count];
+            WebGLTexture = texture;
+
+            Frames = new[] {
+                new TexCoords(0, 0, 1, 1, width, height)
+            };
         }
 
-        public TexCoords Get(uint index)
-        {
-            if (index >= _map.Length) throw new ArgumentException("Index is out of range", "index");
-            return _map[index];
-        }
-
-        public static SpriteAtlas Uniform(uint width, uint height, uint columns, uint rows)
+        public void SliceUniformly(uint width, uint height, uint columns, uint rows)
         {
             var count = columns * rows;
             var atlas = new SpriteAtlas(count);
@@ -43,10 +44,8 @@ namespace BiriBiri.Graphics
                 var x = Coordinates.IndexToColumn(i, columns);
                 var y = Coordinates.IndexToRow(i, columns);
 
-                atlas._map[i] = new TexCoords(tw * x, th * y, tw, th, pw, ph);
+                Frames.Push(new TexCoords(tw * x, th * y, tw, th, pw, ph));
             }
-
-            return atlas;
         }
     }
 }

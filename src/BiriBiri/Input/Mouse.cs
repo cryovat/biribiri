@@ -4,9 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Bridge.Html5;
+using Bridge;
 
 namespace BiriBiri.Input
 {
+    [FileName("biriBiri.js")]
     public enum MouseButton
     {
         Left = 0,
@@ -15,6 +17,7 @@ namespace BiriBiri.Input
         WheelDown = 3
     }
 
+    [FileName("biriBiri.js")]
     public class Mouse : IUpdatable
     {
         private readonly KeyStates[] _a = new KeyStates[4];
